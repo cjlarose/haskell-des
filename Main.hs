@@ -8,7 +8,7 @@ main :: IO ()
 main = do
     (action:keyStr:_) <- getArgs
     let key = read keyStr
-    input <- B.getLine
+    input <- B.getContents
     if action == "encrypt"
         then do
             let encrypted = desEncrypt key . B.unpack $ input
