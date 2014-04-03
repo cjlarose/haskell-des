@@ -60,9 +60,3 @@ unchunk = concat . map f . group 2
     where f (a:b:_) = splitList (join (a, b) 12) 3 8
 
 desEncrypt k xs = unchunk . map (desEncryptBlock k) . chunk $ xs
-
-main :: IO ()
-main = do
-    plaintext <- getLine
-    let encrypted = desEncrypt 90 plaintext
-    putStr . map chr $ encrypted
