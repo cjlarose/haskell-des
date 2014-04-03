@@ -1,7 +1,8 @@
-module DES (desEncrypt) where
+module DES (desEncrypt, desDecrypt) where
 
 import Data.Char (ord, chr)
 import Data.Bits (shiftL, shiftR, (.&.), (.|.), xor)
+import Data.Tuple (swap)
 
 generateKeys :: Int -> [Int]
 generateKeys key = f (join (key, key) 9) 4
@@ -43,8 +44,8 @@ desRound n k_i = join (r, newR) 6
     where (l, r) = split n 6
           newR = (xor l) . sBoxLookup . (xor k_i) . expand $ r
 
--- encrypt 12 bit plaintex n with key k
-desEncryptBlock k n = foldl desRound n (generateKeys k)
+-- encrypt 12 bit plaintex n with keys
+desEncryptBlock keys n = foldl desRound n keys
 
 group _ [] = []
 group n l
@@ -61,4 +62,11 @@ chunk xs = concat . map joinTriple . group 3 . map ord $ xs
 unchunk = concat . map f . group 2
     where f (a:b:_) = splitList (join (a, b) 12) 3 8
 
-desEncrypt k xs = unchunk . map (desEncryptBlock k) . chunk $ xs
+desProcessInput f = unchunk . map f . chunk
+
+desEncrypt k = desProcessInput $ desEncryptBlock $ generateKeys k
+
+desDecryptBlock keys n = desEncryptBlock keys reverseChunk
+    where reverseChunk = join (swap $ split n 6) 6
+
+desDecrypt k = desProcessInput $ desEncryptBlock $ reverse . generateKeys $ k
