@@ -8,13 +8,15 @@ main :: IO ()
 main = do
     (action:keyStr:_) <- getArgs
     let key = read keyStr
+    input <- B.getLine
     if action == "encrypt"
         then do
-            plaintext <- B.getLine
-            let encrypted = desEncrypt key . B.unpack $ plaintext
+            let encrypted = desEncrypt key . B.unpack $ input
             B.putStr . B.pack . map chr $ encrypted
         else
             if action == "decrypt"
-                then putStr "decrypt not implemented"
+                then do
+                    let decrypted = desDecrypt key . B.unpack $ input
+                    B.putStr . B.pack . map chr $ decrypted
             else
                 hPutStrLn stderr "not implemented"
