@@ -65,12 +65,6 @@ desProcessInput f = unchunk . map f . chunk
 
 desEncrypt k = desProcessInput $ desEncryptBlock $ generateKeys k
 
+desDecryptBlock keys n = join 6 $ swap (foldl desRound (swap $ split 6 n) keys)
 
---desRoundFlip n k_i = join (r, newR) 6
---    where (r, l) = split n 6
---          newR = (xor l) . sBoxLookup . (xor k_i) . expand $ r
---
---desDecryptBlock keys n = foldl desRoundFlip n keys
---    --where reverseChunk = join (swap $ split n 6) 6
---
---desDecrypt k = desProcessInput $ desDecryptBlock ((reverse . generateKeys) k)
+desDecrypt k = desProcessInput $ desDecryptBlock ((reverse . generateKeys) k)
