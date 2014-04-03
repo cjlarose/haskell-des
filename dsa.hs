@@ -1,12 +1,9 @@
 import Data.Bits (shiftL, shiftR, (.&.), (.|.), xor)
 
-s1 = [5, 2, 1, 6, 3, 4, 7, 0, 1, 4, 6, 2, 0, 7, 5, 3]
-s2 = [4, 0, 6, 5, 7, 1, 3, 2, 5, 3, 0, 7, 6, 2, 1, 4]
-
 generateKeys :: Int -> [Int]
-generateKeys key = f ((key `shiftL` 9) .|. key) 4
+generateKeys key = f (join (key, key) 9) 4
     where f k len = map (getKey k) [0..(len-1)]
-          getKey k i = shiftR k (10 - i)
+          getKey k i = (shiftR k (10 - i)) .&. 255
 
 expand :: Int -> Int
 expand n = (shiftL (n .&. 0x30) 2) .|. 
@@ -29,7 +26,11 @@ join (a, b) k = (a `shiftL` k) .|. b
 sBoxLookup :: Int -> Int
 sBoxLookup n = join (s1 !! l, s2 !! r) 3
     where (l, r) = split n 4
+          s1 = [5, 2, 1, 6, 3, 4, 7, 0, 1, 4, 6, 2, 0, 7, 5, 3]
+          s2 = [4, 0, 6, 5, 7, 1, 3, 2, 5, 3, 0, 7, 6, 2, 1, 4]
 
 dsaRound n k_i = join (r, newR) 6
     where (l, r) = split n 6
           newR = (xor l) . sBoxLookup . (xor k_i) . expand $ r
+
+dsaEncrypt n k = foldl dsaRound n (generateKeys k)
