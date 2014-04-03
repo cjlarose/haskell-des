@@ -1,3 +1,6 @@
+import DES
+import Data.Char (chr)
+
 main :: IO ()
 main = do
     plaintext <- getLine
