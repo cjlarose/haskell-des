@@ -1,5 +1,7 @@
 import Data.Char (ord, chr)
 import Data.Bits (shiftL, shiftR, (.&.), (.|.), xor)
+import qualified Data.ByteString as B
+import Data.ByteString.Char8 (pack, unpack)
 
 generateKeys :: Int -> [Int]
 generateKeys key = f (join (key, key) 9) 4
@@ -60,3 +62,9 @@ unchunk = concat . map f . group 2
     where f (a:b:_) = splitList (join (a, b) 12) 3 8
 
 dsaEncrypt k xs = unchunk . map (dsaEncryptBlock k) . chunk $ xs
+
+main :: IO ()
+main = do
+    plaintext <- B.getContents
+    let plaintextChars = unpack $ plaintext
+    B.putStr (pack . map chr . dsaEncrypt 90 $ plaintextChars)
