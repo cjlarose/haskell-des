@@ -1,4 +1,4 @@
-import Data.Bits (shiftL, shiftR, (.&.), (.|.))
+import Data.Bits (shiftL, shiftR, (.&.), (.|.), xor)
 
 s1 = [5, 2, 1, 6, 3, 4, 7, 0, 1, 4, 6, 2, 0, 7, 5, 3]
 s2 = [4, 0, 6, 5, 7, 1, 3, 2, 5, 3, 0, 7, 6, 2, 1, 4]
@@ -29,3 +29,7 @@ join (a, b) k = (a `shiftL` k) .|. b
 sBoxLookup :: Int -> Int
 sBoxLookup n = join (s1 !! l, s2 !! r) 3
     where (l, r) = split n 4
+
+dsaRound n k_i = join (r, newR) 6
+    where (l, r) = split n 6
+          newR = (xor l) . sBoxLookup . (xor k_i) . expand $ r
