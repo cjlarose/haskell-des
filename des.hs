@@ -1,7 +1,5 @@
 import Data.Char (ord, chr)
 import Data.Bits (shiftL, shiftR, (.&.), (.|.), xor)
-import qualified Data.ByteString as B
-import Data.ByteString.Char8 (pack, unpack)
 
 generateKeys :: Int -> [Int]
 generateKeys key = f (join (key, key) 9) 4
@@ -39,12 +37,12 @@ sBoxLookup n = join (s1 !! l, s2 !! r) 3
           s1 = [5, 2, 1, 6, 3, 4, 7, 0, 1, 4, 6, 2, 0, 7, 5, 3]
           s2 = [4, 0, 6, 5, 7, 1, 3, 2, 5, 3, 0, 7, 6, 2, 1, 4]
 
-dsaRound n k_i = join (r, newR) 6
+desRound n k_i = join (r, newR) 6
     where (l, r) = split n 6
           newR = (xor l) . sBoxLookup . (xor k_i) . expand $ r
 
 -- encrypt 12 bit plaintex n with key k
-dsaEncryptBlock k n = foldl dsaRound n (generateKeys k)
+desEncryptBlock k n = foldl desRound n (generateKeys k)
 
 group _ [] = []
 group n l
@@ -61,10 +59,10 @@ chunk xs = concat . map joinTriple . group 3 . map ord $ xs
 unchunk = concat . map f . group 2
     where f (a:b:_) = splitList (join (a, b) 12) 3 8
 
-dsaEncrypt k xs = unchunk . map (dsaEncryptBlock k) . chunk $ xs
+desEncrypt k xs = unchunk . map (desEncryptBlock k) . chunk $ xs
 
 main :: IO ()
 main = do
-    plaintext <- B.getContents
-    let plaintextChars = unpack $ plaintext
-    B.putStr (pack . map chr . dsaEncrypt 90 $ plaintextChars)
+    plaintext <- getLine
+    let encrypted = desEncrypt 90 plaintext
+    putStr . map chr $ encrypted
