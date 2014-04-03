@@ -1,4 +1,4 @@
-module DES (desEncrypt, desDecrypt) where
+module DES (desEncrypt) where
 
 import Data.Char (ord, chr)
 import Data.Bits (shiftL, shiftR, (.&.), (.|.), xor)
@@ -40,12 +40,11 @@ sBoxLookup n = join (s1 !! l, s2 !! r) 3
           s1 = [5, 2, 1, 6, 3, 4, 7, 0, 1, 4, 6, 2, 0, 7, 5, 3]
           s2 = [4, 0, 6, 5, 7, 1, 3, 2, 5, 3, 0, 7, 6, 2, 1, 4]
 
-desRound n k_i = join (r, newR) 6
-    where (l, r) = split n 6
-          newR = (xor l) . sBoxLookup . (xor k_i) . expand $ r
+desRound (l, r) k_i = (r, newR)
+    where newR = (xor l) . sBoxLookup . (xor k_i) . expand $ r
 
 -- encrypt 12 bit plaintex n with keys
-desEncryptBlock keys n = foldl desRound n keys
+desEncryptBlock keys n = join (foldl desRound (split n 6) keys) 6
 
 group _ [] = []
 group n l
@@ -66,7 +65,12 @@ desProcessInput f = unchunk . map f . chunk
 
 desEncrypt k = desProcessInput $ desEncryptBlock $ generateKeys k
 
-desDecryptBlock keys n = desEncryptBlock keys reverseChunk
-    where reverseChunk = join (swap $ split n 6) 6
 
-desDecrypt k = desProcessInput $ desEncryptBlock $ reverse . generateKeys $ k
+--desRoundFlip n k_i = join (r, newR) 6
+--    where (r, l) = split n 6
+--          newR = (xor l) . sBoxLookup . (xor k_i) . expand $ r
+--
+--desDecryptBlock keys n = foldl desRoundFlip n keys
+--    --where reverseChunk = join (swap $ split n 6) 6
+--
+--desDecrypt k = desProcessInput $ desDecryptBlock ((reverse . generateKeys) k)
