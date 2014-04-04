@@ -46,6 +46,7 @@ desRound (l, r) k_i = (r, newR)
 -- encrypt 12 bit plaintex n with keys
 desEncryptBlock keys n = join 6 $ foldl desRound (split 6 n) keys
 
+group :: Int -> [a] -> [[a]]
 group _ [] = []
 group n l
     | n > 0 = (take n l) : (group n (drop n l))
@@ -55,16 +56,21 @@ joinTriple triple = [a,b]
     where (a, b) = split 12 $ joinList 8 triple
 
 -- chunk input characters into 12-bit chunks
-chunk = concat . map joinTriple . group 3 . map ord
+--chunk :: [Char] -> [Int]
+--chunk :: B.ByteString -> [Int]
+chunk = concat . map joinTriple . group 3
 
 -- given 12-bit blocks, turn back into bytes
 unchunk = concat . map f . group 2
     where f (a:b:_) = splitList 8 3 $ join 12 (a, b)
 
+--desProcessInput :: (Int -> Int) -> [Char] -> [Int]
 desProcessInput f = unchunk . map f . chunk
 
+--desEncrypt :: Int -> [Char] -> [Int]
 desEncrypt k = desProcessInput $ desEncryptBlock $ generateKeys k
 
 desDecryptBlock keys n = join 6 $ swap $ foldl desRound (swap $ split 6 n) keys
 
-desDecrypt k = desProcessInput $ desDecryptBlock $ reverse . generateKeys $ k
+--desDecrypt :: Int -> [Char] -> [Int]
+desDecrypt k xs = desProcessInput (desDecryptBlock . reverse . generateKeys $ k) xs
