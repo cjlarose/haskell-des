@@ -28,7 +28,7 @@ split k n = (left, right)
 
 -- concatenate a list of ints of bitlength k
 joinList :: Int -> [Int] -> Int
-joinList k xs = foldl (\a b -> (a `shiftL` k) .|. b) 0 xs
+joinList k = foldl (\a b -> (a `shiftL` k) .|. b) 0
 
 join :: Int -> (Int, Int) -> Int
 join k (a, b) = joinList k [a, b]
@@ -41,10 +41,10 @@ sBoxLookup n = join 3 (s1 !! l, s2 !! r)
           s2 = [4, 0, 6, 5, 7, 1, 3, 2, 5, 3, 0, 7, 6, 2, 1, 4]
 
 desRound (l, r) k_i = (r, newR)
-    where newR = (xor l) . sBoxLookup . (xor k_i) . expand $ r
+    where newR = xor l . sBoxLookup . xor k_i . expand $ r
 
 -- encrypt 12 bit plaintex n with keys
-desEncryptBlock keys n = join 6 (foldl desRound (split 6 n) keys)
+desEncryptBlock keys n = join 6 $ foldl desRound (split 6 n) keys
 
 group _ [] = []
 group n l
@@ -52,19 +52,19 @@ group n l
     | otherwise = error "Negative n"
 
 joinTriple triple = [a,b]
-    where (a, b) = split 12 (joinList 8 triple)
+    where (a, b) = split 12 $ joinList 8 triple
 
 -- chunk input characters into 12-bit chunks
-chunk xs = concat . map joinTriple . group 3 . map ord $ xs
+chunk = concat . map joinTriple . group 3 . map ord
 
 -- given 12-bit blocks, turn back into bytes
 unchunk = concat . map f . group 2
-    where f (a:b:_) = splitList 8 3 (join 12 (a, b))
+    where f (a:b:_) = splitList 8 3 $ join 12 (a, b)
 
 desProcessInput f = unchunk . map f . chunk
 
 desEncrypt k = desProcessInput $ desEncryptBlock $ generateKeys k
 
-desDecryptBlock keys n = join 6 $ swap (foldl desRound (swap $ split 6 n) keys)
+desDecryptBlock keys n = join 6 $ swap $ foldl desRound (swap $ split 6 n) keys
 
-desDecrypt k = desProcessInput $ desDecryptBlock ((reverse . generateKeys) k)
+desDecrypt k = desProcessInput $ desDecryptBlock $ reverse . generateKeys $ k
