@@ -10,8 +10,11 @@ generateKeys key = f (join 9 (key, key)) 4
           getKey k i = (shiftR k (10 - i)) .&. 0xFF
 
 expand :: Int -> Int
-expand n = foldl (.|.) 0 $ map f [(0x30, -2), (0x4, -3), (0xC, -1), (0x8, 1), (0x3, 0)]
-    where f (mask, shift) = (if shift >= 0 then shiftR else shiftL) (n .&. mask) shift
+expand n = (shiftL (n .&. 0x30) 2) .|. 
+           (shiftL (n .&. 0x4 ) 3) .|. 
+           (shiftL (n .&. 0xC) 1) .|. 
+           (shiftR (n .&. 0x8) 1) .|.
+           (n .&. 0x3)
 
 -- split int n into len ints of bitlength k
 splitList :: Int -> Int -> Int -> [Int]
