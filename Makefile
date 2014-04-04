@@ -7,6 +7,6 @@ clean:
 
 .PHONY: prof
 prof:
-	ghc -O2 -prof -fprof-auto -rtsopts Main.hs
+	ghc -O2 -prof -fprof-auto Main.hs
 	./Main +RTS -p -RTS encrypt 923 < DES.hs
 	more Main.prof
