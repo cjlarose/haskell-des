@@ -7,7 +7,7 @@ import Data.Tuple (swap)
 generateKeys :: Int -> [Int]
 generateKeys key = f (join 9 (key, key)) 4
     where f k len = map (getKey k) [0..(len-1)]
-          getKey k i = (shiftR k (10 - i)) .&. 255
+          getKey k i = (shiftR k (10 - i)) .&. 0xFF
 
 expand :: Int -> Int
 expand n = foldl (.|.) 0 $ map f [(0x30, -2), (0x4, -3), (0xC, -1), (0x8, 1), (0x3, 0)]
