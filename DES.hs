@@ -18,9 +18,9 @@ expand n = (shiftL (n .&. 0x30) 2) .|.
 
 -- split int n into len ints of bitlength k
 splitList :: Int -> Int -> Int -> [Int]
-splitList bitlength len n = snd $ iterate f (n, []) !! len
-    where f (x, xs) = (x `shiftR` bitlength, (x .&. mask) : xs)
-          mask      = (1 `shiftL` bitlength) - 1
+splitList bitlength len n = map f [0..(len-1)]
+    where f i = n `shiftR` ((len - i - 1) * bitlength)  .&. mask
+          mask    = (1 `shiftL` bitlength) - 1
 
 split :: Int -> Int -> (Int, Int)
 split k n = (left, right)
