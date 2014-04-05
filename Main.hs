@@ -1,4 +1,4 @@
-import DES
+import DES (BlockCipher(..), DES(..))
 import Data.Char (chr)
 import qualified Data.ByteString as B
 import System.Environment (getArgs)
@@ -8,15 +8,14 @@ main :: IO ()
 main = do
     (action:keyStr:_) <- getArgs
     let key = read keyStr
+    let cipher = DES {rawKey=key}
     input <- B.getContents
     if action == "encrypt"
         then do
-            let encrypted = desEncrypt key . map fromIntegral . B.unpack $ input
-            B.putStr . B.pack . map fromIntegral $ encrypted
+            B.putStr $ ecb cipher input
         else
             if action == "decrypt"
                 then do
-                    let decrypted = desDecrypt key . map fromIntegral . B.unpack $ input
-                    B.putStr . B.pack . map fromIntegral $ decrypted
+                    B.putStr $ unEcb cipher input
             else
                 hPutStrLn stderr "not implemented"

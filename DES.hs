@@ -1,4 +1,4 @@
-module DES (desEncrypt, desDecrypt) where
+module DES (BlockCipher(..), DES(..)) where
 
 import Data.Char (ord, chr)
 import Data.Bits (shiftL, shiftR, (.&.), (.|.), xor, Bits)
