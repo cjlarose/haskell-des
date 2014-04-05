@@ -8,5 +8,5 @@ clean:
 .PHONY: prof
 prof:
 	ghc -O2 -prof -fprof-auto Main.hs
-	./Main +RTS -p -RTS encrypt 923 < DES.hs
+	./Main +RTS -p -RTS encrypt 923 < pg45291.txt > /dev/null
 	more Main.prof
