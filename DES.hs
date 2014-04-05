@@ -71,7 +71,7 @@ desDecryptBlock keys n = join 6 $ swap $ foldl desRound (swap $ split 6 n) keys
 --desDecrypt :: Int -> [Int] -> [Int]
 desDecrypt k xs = desProcessInput (desDecryptBlock . reverse . generateKeys $ k) xs
 
-data DES = DES { rawKey :: Word16 }
+data DES = DES { rawKey :: Word16 } deriving Show
 
 instance Serialize DES where
     put k = do
@@ -83,7 +83,7 @@ instance Serialize DES where
             Just k -> return k
 
 instance BlockCipher DES where
-    blockSize = Tagged 12
+    blockSize = Tagged 24
     keyLength = Tagged 9
     encryptBlock (DES k) plaintext = B.pack . map fromIntegral . desEncrypt k . map fromIntegral . B.unpack $ plaintext
     decryptBlock (DES k) ciphertext = B.pack . map fromIntegral . desDecrypt k . map fromIntegral . B.unpack $ ciphertext
