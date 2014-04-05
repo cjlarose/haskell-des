@@ -3,6 +3,11 @@ module DES (desEncrypt, desDecrypt) where
 import Data.Char (ord, chr)
 import Data.Bits (shiftL, shiftR, (.&.), (.|.), xor, Bits)
 import Data.Tuple (swap)
+import Crypto.Classes (BlockCipher(..))
+import Data.Tagged (Tagged(..))
+import Data.Serialize (Serialize(..), putWord16be, getByteString)
+import Data.Word (Word16)
+import qualified Data.ByteString as B
 
 generateKeys key = f (join 9 (key, key)) 4
     where f k len = map (getKey k) [0..(len-1)]
@@ -58,10 +63,28 @@ unchunk = concat . map f . group 2
 
 desProcessInput f = unchunk . map f . chunk
 
-desEncrypt :: Int -> [Int] -> [Int]
+--desEncrypt :: Int -> [Int] -> [Int]
 desEncrypt k = desProcessInput $ desEncryptBlock $ generateKeys k
 
 desDecryptBlock keys n = join 6 $ swap $ foldl desRound (swap $ split 6 n) keys
 
-desDecrypt :: Int -> [Int] -> [Int]
+--desDecrypt :: Int -> [Int] -> [Int]
 desDecrypt k xs = desProcessInput (desDecryptBlock . reverse . generateKeys $ k) xs
+
+data DES = DES { rawKey :: Word16 }
+
+instance Serialize DES where
+    put k = do
+        putWord16be (rawKey k)
+    get = do
+        b <- getByteString 2
+        case buildKey b of
+            Nothing -> fail "Invalid key on 'get'"
+            Just k -> return k
+
+instance BlockCipher DES where
+    blockSize = Tagged 12
+    keyLength = Tagged 9
+    encryptBlock (DES k) plaintext = B.pack . map fromIntegral . desEncrypt k . map fromIntegral . B.unpack $ plaintext
+    decryptBlock (DES k) ciphertext = B.pack . map fromIntegral . desDecrypt k . map fromIntegral . B.unpack $ ciphertext
+    buildKey k = Just $ DES $ head . map fromIntegral $ B.unpack k
