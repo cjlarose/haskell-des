@@ -5,8 +5,8 @@ import Data.Bits (shiftL, shiftR, (.&.), (.|.), xor, Bits)
 import Data.Tuple (swap)
 import Crypto.Classes (BlockCipher(..))
 import Data.Tagged (Tagged(..))
-import Data.Serialize (Serialize(..), putWord16be, getByteString)
-import Data.Word (Word16)
+import Data.Serialize (Serialize(..), putWord32be, getByteString)
+import Data.Word (Word32)
 import qualified Data.ByteString as B
 
 generateKeys key = f (join 9 (key, key)) 4
@@ -53,31 +53,28 @@ joinTriple triple = [a,b]
     where (a, b) = split 12 $ joinList 8 triple
 
 -- chunk input characters into 12-bit chunks
-chunk :: (Num t, Bits t) => [t] -> [t]
 chunk = concat . map joinTriple . group 3
 
 -- given 12-bit blocks, turn back into bytes
-unchunk :: (Num t, Bits t) => [t] -> [t]
 unchunk = concat . map f . group 2
     where f (a:b:_) = splitList 8 3 $ join 12 (a, b)
 
 desProcessInput f = unchunk . map f . chunk
 
---desEncrypt :: Int -> [Int] -> [Int]
-desEncrypt k = desProcessInput $ desEncryptBlock $ generateKeys k
+desEncrypt k plaintext = map f $ joinTriple plaintext
+    where f = desEncryptBlock (generateKeys k)
 
 desDecryptBlock keys n = join 6 $ swap $ foldl desRound (swap $ split 6 n) keys
 
---desDecrypt :: Int -> [Int] -> [Int]
 desDecrypt k xs = desProcessInput (desDecryptBlock . reverse . generateKeys $ k) xs
 
-data DES = DES { rawKey :: Word16 } deriving Show
+data DES = DES { rawKey :: Word32 } deriving Show
 
 instance Serialize DES where
     put k = do
-        putWord16be (rawKey k)
+        putWord32be (rawKey k)
     get = do
-        b <- getByteString 2
+        b <- getByteString 4
         case buildKey b of
             Nothing -> fail "Invalid key on 'get'"
             Just k -> return k
@@ -85,6 +82,6 @@ instance Serialize DES where
 instance BlockCipher DES where
     blockSize = Tagged 24
     keyLength = Tagged 9
-    encryptBlock (DES k) plaintext = B.pack . map fromIntegral . desEncrypt k . map fromIntegral . B.unpack $ plaintext
+    encryptBlock (DES k) plaintext = B.pack . map fromIntegral $ desEncrypt k (map fromIntegral (B.unpack (plaintext)))
     decryptBlock (DES k) ciphertext = B.pack . map fromIntegral . desDecrypt k . map fromIntegral . B.unpack $ ciphertext
     buildKey k = Just $ DES $ head . map fromIntegral $ B.unpack k
