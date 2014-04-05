@@ -49,11 +49,11 @@ desDecryptBlock keys n = join 6 $ swap $ foldl desRound (swap $ split 6 n) keys
 joinTriple triple = [a,b]
     where (a, b) = split 12 $ joinList 8 triple
 
-desEncrypt k plaintext = map f $ joinTriple plaintext
-    where f = desEncryptBlock (generateKeys k)
+desProcessBlock f plaintext = splitList 8 3 . joinList 12 $ (map f $ joinTriple plaintext)
 
-desDecrypt k plaintext = map f $ joinTriple plaintext
-    where f = desDecryptBlock (reverse $ generateKeys k)
+desEncrypt k = desProcessBlock (desEncryptBlock (generateKeys k))
+
+desDecrypt k = desProcessBlock (desDecryptBlock (reverse $ generateKeys k))
 
 data DES = DES { rawKey :: Word32 } deriving Show
 
