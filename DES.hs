@@ -6,8 +6,11 @@ import Data.Tuple (swap)
 import Crypto.Classes (BlockCipher(..))
 import Data.Tagged (Tagged(..))
 import Data.Serialize (Serialize(..), putWord32be, getByteString)
-import Data.Word (Word32)
+import Data.Word (Word16, Word32)
 import qualified Data.ByteString as B
+import qualified Data.ByteString.Lazy as BL
+import Data.Binary.Strict.BitGet (getAsWord16, runBitGet, BitGet(..))
+import Data.Binary.BitPut (BitPut(..), runBitPut, putNBits)
 
 generateKeys key = f (join 9 (key, key)) 4
     where f k len = map (getKey k) [0..(len-1)]
@@ -42,18 +45,36 @@ desRound (l, r) k_i = (r, newR)
     where newR = xor l . sBoxLookup . xor k_i . expand $ r
 
 -- encrypt 12 bit plaintex n with keys
+desEncryptBlock :: (Integral b, Bits b) => [b] -> b -> b
 desEncryptBlock keys n = join 6 $ foldl desRound (split 6 n) keys
 
 desDecryptBlock keys n = join 6 $ swap $ foldl desRound (swap $ split 6 n) keys
 
-joinTriple triple = [a,b]
-    where (a, b) = split 12 $ joinList 8 triple
+-- list of 12-bit blocks -> list of 12-bit blocks
+desEncrypt' :: (Integral b, Bits b) => b -> [b] -> [b]
+desEncrypt' k bs = map f bs
+    where f = desEncryptBlock (generateKeys k)
 
-desProcessBlock f plaintext = splitList 8 3 . joinList 12 $ (map f $ joinTriple plaintext)
+desDecrypt' :: (Integral b, Bits b) => b -> [b] -> [b]
+desDecrypt' k bs = map f bs
+    where f = desDecryptBlock (generateKeys k)
 
-desEncrypt k = desProcessBlock (desEncryptBlock (generateKeys k))
+getBlocks :: BitGet (Word16, Word16)
+getBlocks = do
+    a <- getAsWord16 12
+    b <- getAsWord16 12
+    return (a, b)
 
-desDecrypt k = desProcessBlock (desDecryptBlock (reverse $ generateKeys k))
+--getBlocks' :: B.ByteString -> Either String (Word16, Word16)
+getBlocks' input = runBitGet input getBlocks
+
+putBlock :: Word16 -> BitPut
+putBlock = putNBits 12
+
+--putBlocks :: [Word16] -> B.ByteString
+--putBlocks bs = BL.toChunks . BL.concat $ map (runBitPut . putBlock) bs
+putBlocks :: [Word16] -> B.ByteString
+putBlocks bs = B.concat . concat $ map (BL.toChunks . runBitPut . putBlock) bs
 
 data DES = DES { rawKey :: Word32 } deriving Show
 
@@ -66,9 +87,12 @@ instance Serialize DES where
             Nothing -> fail "Invalid key on 'get'"
             Just k -> return k
 
+desProcessInput f input = putBlocks . map fromIntegral . f . map fromIntegral $ [a, b]
+    where (a, b) = case (getBlocks' input) of { Right x -> x; Left msg -> error msg }
+
 instance BlockCipher DES where
     blockSize = Tagged 24
     keyLength = Tagged 9
-    encryptBlock (DES k) plaintext = B.pack . map fromIntegral $ desEncrypt k (map fromIntegral (B.unpack (plaintext)))
-    decryptBlock (DES k) ciphertext = B.pack . map fromIntegral . desDecrypt k . map fromIntegral . B.unpack $ ciphertext
+    encryptBlock (DES k) plaintext = desProcessInput (desEncrypt' k) plaintext
+    decryptBlock (DES k) ciphertext = desProcessInput (desDecrypt' k) ciphertext
     buildKey k = Just $ DES $ head . map fromIntegral $ B.unpack k
