@@ -1,5 +1,4 @@
 import DES (BlockCipher(..), DES(..))
-import Data.Char (chr)
 import qualified Data.ByteString as B
 import System.Environment (getArgs)
 import System.IO (stderr, hPutStrLn)
